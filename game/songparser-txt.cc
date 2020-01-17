@@ -1,4 +1,5 @@
 #include "songparser.hh"
+#include "unicode.hh"
 
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
@@ -98,7 +99,7 @@ bool SongParser::txtParseField(std::string const& line) {
 	if (line[0] != '#') return false;
 	std::string::size_type pos = line.find(':');
 	if (pos == std::string::npos) throw std::runtime_error("Invalid txt format, should be #key:value");
-	std::string key = boost::trim_copy(line.substr(1, pos - 1));
+	std::string key = UnicodeUtil::toUpper(boost::trim_copy(line.substr(1, pos - 1)));
 	std::string value = boost::trim_copy(line.substr(pos + 1));
 	if (value.empty()) return true;
 	
