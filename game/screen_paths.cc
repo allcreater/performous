@@ -11,8 +11,14 @@ ScreenPaths::ScreenPaths(std::string const& name, Audio& audio, Songs& songs): S
 
 void ScreenPaths::enter() {
 	m_theme = std::make_unique<ThemeAudioDevices>();
-	fs::path homedir(getenv("HOME"));
-	generateMenuFromPath(homedir);
+
+	std::string homeDirStr;
+	if (getenv("HOME"))
+		homeDirStr = getenv("HOME");
+	else if (getenv("USERPROFILE"))
+		homeDirStr = getenv("USERPROFILE");
+
+	generateMenuFromPath(homeDirStr);
 }
 
 void ScreenPaths::exit() {
@@ -90,9 +96,12 @@ void ScreenPaths::generateMenuFromPath(fs::path path) {
 			//Reload internal, but that crashes!! rely on the user to press ctrl+r in song selection screen
 		}));
 	}
-	m_menu.add(MenuOption(_(".."),_("Go up one folder")).call([this, sl, path]() {
-		generateMenuFromPath(path.parent_path());
-	}));
+	if (!path.parent_path().empty() && !fs::detail::equivalent(path.parent_path(), path))
+	{
+		m_menu.add(MenuOption(_(".."), _("Go up one folder")).call([this, sl, path]() {
+			generateMenuFromPath(path.parent_path());
+		}));
+	}
 //todo sort folders
 	for (fs::directory_iterator dirIt(path), dirEnd; dirIt != dirEnd; ++dirIt) { //loop through files and directories
 		fs::path p = dirIt->path();
