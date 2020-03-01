@@ -32,6 +32,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <codecvt>
 
 // Disable main level exception handling for debug builds (because gdb cannot properly catch throwing otherwise)
 #ifdef NDEBUG
@@ -304,6 +305,11 @@ void fatalError(std::string msg, bool hasLog = false, std::string title = "FATAL
 
 int main(int argc, char** argv) try {
 	signalSetup();
+
+	auto locale = std::locale(std::locale(), new std::codecvt_utf8_utf16<wchar_t>());
+	boost::filesystem::path::imbue(locale);
+	std::locale::global(locale);
+
 	std::srand(std::time(nullptr));
 	// Parse commandline options
 	std::vector<std::string> devices;
