@@ -102,6 +102,9 @@ class AudioBuffer {
 		// Insert silence at the beginning if the stream starts later than 0.0
 		if (m_pos == 0 && timestamp > 0.0) {
 			m_pos = timestamp * m_sps;
+			if (m_pos > 10000000)
+				throw std::logic_error("too big m_pos");
+
 			m_data.resize(m_pos, 0);
 		}
 		m_data.insert(m_data.end(), data.begin(), data.end());
