@@ -98,11 +98,11 @@ Song::Status Song::status(double time, ScreenSing* song) {
 	if (song->getMenu().isOpen()) return Status::NORMAL; // This should prevent querying getVocalTrack with an out-of-bounds/uninitialized index.
 	if (vocalTracks.empty()) return Status::NORMAL;  // To avoid crash with non-vocal songs (dance, guitar) -- FIXME: what should we actually do?
 	Note target; target.end = time;
-	Notes s1, s2, notes;
+	Notes notes;
 	Notes::const_iterator it;
 	if (song->singingDuet()) {
-		s1 = getVocalTrack(0).notes;
-		s2 = getVocalTrack(1).notes;
+		Notes const& s1 = getVocalTrack(0).notes;
+		Notes const& s2 = getVocalTrack(1).notes;
 		std::merge(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(notes), Note::ltBegin);
 	}
 	else {
