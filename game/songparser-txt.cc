@@ -46,7 +46,6 @@ void SongParser::txtParse() {
 	}
 	
 	if (m_song.hasDuet()) {
-		bool skip;
 		Notes merged, finalDuet;
 		Notes const& s1 = m_song.getVocalTrack(TrackName::LEAD_VOCAL).notes;
 		Notes const& s2 = m_song.getVocalTrack(SongParserUtil::DUET_P2).notes;
@@ -59,37 +58,43 @@ void SongParser::txtParse() {
 		VocalTrack& duetTrack = m_song.getVocalTrack(SongParserUtil::DUET_BOTH);
 		Notes& duetNotes = duetTrack.notes;
 		duetNotes.clear();
-		
-		for (auto currentNote: merged) {
-			skip = false;
-			if (!finalDuet.empty()){ 
+
+		for (auto currentNote : merged) {
+			if (!finalDuet.empty()) {
 				if (currentNote.type == Note::SLEEP) {
 					if (finalDuet.size() > 1)
 					{
 						auto prevToLast = ++(finalDuet.rbegin());
 						if (prevToLast->type == Note::SLEEP) {
 							std::clog << "songparser/info: Phrase formed by a single syllable is most likely our fault, We'll skip the break." << std::endl;
-							skip = true;
+							continue;
 						}
 					}
 				}
 				else {
-					if (Note::overlapping(finalDuet.back(),currentNote)) {
+					Note& previousNote = finalDuet.back();
+
+					if (Note::equal(previousNote, currentNote))
+						continue;
+
+					if (Note::overlapping(previousNote, currentNote)) {
 						std::clog << "songparser/info: Will try to fix overlap (most likely between both singers) with a linebreak." << std::endl;
 						Note lineBreak = Note();
 						lineBreak.type = Note::SLEEP;
-						double beatDur = getBPM(finalDuet.back().begin).step;
-						double newEnd = (currentNote.begin - 2*beatDur);
+						double beatDur = getBPM(previousNote.begin).step;
+						double newEnd = std::max(currentNote.begin - 2 * beatDur, previousNote.begin);
 						lineBreak.begin = lineBreak.end = newEnd;
-						if (finalDuet.back().type != Note::SLEEP) {
-							finalDuet.back().end = newEnd;
-							if (currentNote.type == Note::SLEEP) { skip = true; }
-							if (!skip) { finalDuet.push_back(lineBreak); }
-						}
+
+						//overlapping could be true even when both notes are not SLEEP
+						assert(previousNote.type != Note::SLEEP);
+						assert(currentNote.type != Note::SLEEP);
+
+						previousNote.end = newEnd;
+						finalDuet.push_back(lineBreak);
 					}
 				}
 			}
-			if (!skip) { finalDuet.push_back(currentNote); }
+			finalDuet.push_back(currentNote);
 		}
 		auto finalNote = std::unique(finalDuet.begin(), finalDuet.end(), Note::equal);
 		finalDuet.erase(finalNote, finalDuet.end());
@@ -97,7 +102,7 @@ void SongParser::txtParse() {
 		duetNotes.swap(finalDuet);
 		duetTrack.noteMin = std::min(m_song.getVocalTrack(TrackName::LEAD_VOCAL).noteMin, m_song.getVocalTrack(SongParserUtil::DUET_P2).noteMin);
 		duetTrack.noteMax = std::max(m_song.getVocalTrack(TrackName::LEAD_VOCAL).noteMax, m_song.getVocalTrack(SongParserUtil::DUET_P2).noteMax);
-	} 
+	}
 }
 
 bool SongParser::txtParseField(std::string const& line) {
