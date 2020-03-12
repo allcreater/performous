@@ -12,6 +12,9 @@ public:
 
 private:
 	void StartServer(int tried, bool fallbackPortInUse);
+#if BOOST_OS_WINDOWS
+	bool IsElevated();
+#endif
 	std::string getIPaddr();	
 	std::shared_ptr<std::thread> m_serverThread;
 	std::shared_ptr<RequestHandler> m_server;

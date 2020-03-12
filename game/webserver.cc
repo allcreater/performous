@@ -24,8 +24,20 @@ void WebServer::StartServer(int tried, bool fallbackPortInUse) {
 		addr = "http://127.0.0.1:" + portToUse;
 		std::clog << "webserver/notice: Starting local server on: " << addr <<std::endl;
 	} else {
+#if BOOST_OS_WINDOWS
+		if (!IsElevated()) {
+			std::clog << "webserver/warning: Can't start public server due to insufficient rights." << std::endl;
+			addr = "http://127.0.0.1:" + portToUse;
+			std::clog << "webserver/notice: [Fallback] Starting local server on: " << addr << std::endl;
+		}
+		else {
+			addr = "http://*:" + portToUse;
+			std::clog << "webserver/notice: Starting public server on: " << addr << std::endl;
+		}
+#else
 		addr = "http://0.0.0.0:" + portToUse;
 		std::clog << "webserver/notice: Starting public server on: " << addr << std::endl;
+#endif
 	}
 
 	try {
@@ -43,6 +55,24 @@ void WebServer::StartServer(int tried, bool fallbackPortInUse) {
 		StartServer(tried, fallbackPortInUse);
 	}
 }
+
+#if BOOST_OS_WINDOWS
+bool WebServer::IsElevated() {
+	BOOL fRet = FALSE;
+	HANDLE hToken = NULL;
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+		TOKEN_ELEVATION Elevation;
+		DWORD cbSize = sizeof(TOKEN_ELEVATION);
+		if (GetTokenInformation(hToken, TokenElevation, &Elevation, sizeof(Elevation), &cbSize)) {
+			fRet = Elevation.TokenIsElevated;
+		}
+	}
+	if (hToken) {
+		CloseHandle(hToken);
+	}
+	return fRet;
+}
+#endif
 
 WebServer::WebServer(Songs& songs)
 : m_songs(songs)
